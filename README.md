@@ -33,7 +33,8 @@ A three-line menu button appears on the top-right when the game is not being pla
 
 ## Run the Project
 
-Download or clone the project and open the HTML file in any modern browser.
+You can play the game here: https://fakeraafi.github.io/Flappy-Bird/
+Otherwise download or clone the project and open the HTML file in any modern browser.
 
 ## License
 
