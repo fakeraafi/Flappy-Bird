@@ -1,0 +1,1180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Flappy Bird – Customizer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+/* ─── Reset & Root ───────────────────────────────────────── */
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --gold:#f5c518;--gold-dark:#b8860b;--gold-light:#fde68a;
+  --panel-bg:#0f1117;--panel-card:#1a1d28;--panel-border:#2a2d3e;
+  --text:#e2e8f0;--text-muted:#64748b;
+  --radius:12px;--radius-sm:8px;
+}
+html,body{height:100%;overflow:hidden}
+body{
+  background:#070a14;
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Nunito',sans-serif;
+  min-height:100vh;
+}
+
+/* ─── App Layout ─────────────────────────────────────────── */
+#app{
+  position:relative;
+  padding:16px;
+}
+
+/* ─── Game Section ───────────────────────────────────────── */
+#game-wrap{
+  position:relative;width:340px;height:600px;flex-shrink:0;
+  border-radius:18px;overflow:hidden;
+  box-shadow:0 0 0 2px var(--gold-dark),0 0 40px rgba(245,197,24,.2),0 20px 60px rgba(0,0,0,.6);
+}
+#gameCanvas{display:block;width:100%;height:100%}
+
+/* HUD */
+#score-hud{
+  position:absolute;top:14px;left:50%;transform:translateX(-50%);
+  font-family:'Press Start 2P',monospace;font-size:22px;
+  color:#fff;text-shadow:2px 2px 0 #000,0 0 14px rgba(245,197,24,.8);
+  pointer-events:none;z-index:10;display:none;
+}
+#best-hud{
+  position:absolute;top:14px;right:12px;text-align:right;
+  font-family:'Press Start 2P',monospace;font-size:7px;
+  color:var(--gold);line-height:1.7;pointer-events:none;z-index:10;
+}
+
+/* Menu trigger */
+#menu-btn{
+  position:absolute;top:14px;right:14px;z-index:20;
+  width:44px;height:44px;display:flex;align-items:center;justify-content:center;
+  background:rgba(15,17,23,.88);border:2px solid var(--gold);border-radius:12px;
+  cursor:pointer;color:var(--gold);box-shadow:0 8px 20px rgba(0,0,0,.28);
+  transition:transform .12s,background .2s,border-color .2s,opacity .2s;
+}
+#menu-btn:hover{background:rgba(24,27,39,.96)}
+#menu-btn:active{transform:scale(.95)}
+#menu-btn.hidden{opacity:0;pointer-events:none}
+#menu-btn .menu-lines,
+#menu-btn .menu-lines::before,
+#menu-btn .menu-lines::after{
+  display:block;content:'';width:18px;height:2.5px;background:currentColor;border-radius:999px;
+}
+#menu-btn .menu-lines{position:relative}
+#menu-btn .menu-lines::before{position:absolute;top:-6px;left:0}
+#menu-btn .menu-lines::after{position:absolute;top:6px;left:0}
+
+/* Overlays */
+.overlay{
+  position:absolute;inset:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  background:rgba(0,0,0,.55);backdrop-filter:blur(4px);
+  transition:opacity .25s;z-index:15;
+}
+.overlay.gone{opacity:0;pointer-events:none}
+.overlay h1{font-family:'Press Start 2P',monospace;font-size:19px;color:var(--gold);
+  text-shadow:3px 3px 0 var(--gold-dark);margin-bottom:6px;letter-spacing:1px}
+.overlay h2{font-family:'Press Start 2P',monospace;font-size:11px;color:#fff;
+  text-shadow:2px 2px 0 #000;margin-bottom:22px}
+.overlay p{font-size:11px;color:#ccc;text-align:center;line-height:2;margin-bottom:20px}
+.ob-btn{
+  background:var(--gold);color:#0f1117;border:none;padding:12px 26px;
+  font-family:'Press Start 2P',monospace;font-size:9px;border-radius:10px;
+  cursor:pointer;box-shadow:0 4px 0 var(--gold-dark);transition:transform .1s,box-shadow .1s;
+  margin:4px;
+}
+.ob-btn:active{transform:translateY(3px);box-shadow:0 1px 0 var(--gold-dark)}
+.ob-btn:hover{background:#ffd700}
+.ob-btn.sec{background:transparent;color:var(--gold);border:2px solid var(--gold);box-shadow:none}
+.ob-btn.sec:hover{background:rgba(245,197,24,.1)}
+.bird-anim{font-size:38px;margin-bottom:8px;animation:bob .8s ease-in-out infinite alternate}
+@keyframes bob{from{transform:translateY(0)}to{transform:translateY(-8px)}}
+
+/* Scoreboard */
+.sb{background:rgba(245,197,24,.08);border:2px solid var(--gold);border-radius:10px;
+  padding:14px 28px;margin-bottom:20px;width:220px}
+.sb-row{display:flex;justify-content:space-between;gap:32px;margin:5px 0}
+.sb-label{font-size:7px;color:#888;font-family:'Press Start 2P',monospace}
+.sb-val{font-size:13px;color:var(--gold);font-family:'Press Start 2P',monospace}
+.sb-medal{font-size:9px;color:var(--gold);text-align:center;margin-top:8px;
+  font-family:'Press Start 2P',monospace}
+
+/* ─── Customize Panel ────────────────────────────────────── */
+#panel{
+  background:var(--panel-bg);
+}
+#panel-header{
+  padding:16px 18px 0;flex-shrink:0;
+  background:linear-gradient(180deg,#12151f 0%,var(--panel-bg) 100%);
+}
+#panel-header h3{
+  font-family:'Press Start 2P',monospace;font-size:10px;color:var(--gold);
+  letter-spacing:1px;margin-bottom:12px;
+}
+
+/* Tabs */
+.tabs{display:flex;gap:4px;background:#0a0c14;border-radius:10px;padding:4px}
+.tab-btn{
+  flex:1;border:none;background:transparent;color:var(--text-muted);
+  font-family:'Nunito',sans-serif;font-weight:700;font-size:10px;
+  padding:7px 2px;border-radius:7px;cursor:pointer;transition:all .2s;
+  white-space:nowrap;
+}
+.tab-btn.active{background:var(--gold);color:#0f1117}
+.tab-btn:not(.active):hover{color:var(--text);background:#1a1d28}
+
+/* Panel Body */
+#panel-body{flex:1;overflow-y:auto;padding:14px 16px;scrollbar-width:thin;
+  scrollbar-color:var(--panel-border) transparent}
+#panel-body::-webkit-scrollbar{width:4px}
+#panel-body::-webkit-scrollbar-thumb{background:var(--panel-border);border-radius:4px}
+
+.tab-pane{display:none}
+.tab-pane.active{display:block}
+
+/* Section label */
+.sec-label{font-size:9px;font-weight:800;color:var(--text-muted);
+  text-transform:uppercase;letter-spacing:1.5px;margin:14px 0 8px;
+  font-family:'Press Start 2P',monospace}
+.sec-label:first-child{margin-top:0}
+
+/* Swatch grid */
+.swatches{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:4px}
+.swatch{
+  width:38px;height:38px;border-radius:10px;cursor:pointer;position:relative;
+  border:2px solid transparent;transition:all .15s;
+  display:flex;align-items:center;justify-content:center;font-size:14px;
+}
+.swatch:hover{transform:scale(1.1)}
+.swatch.active{border-color:#fff;box-shadow:0 0 0 2px var(--gold),0 0 12px rgba(245,197,24,.4)}
+.swatch .check{position:absolute;bottom:2px;right:3px;font-size:9px;color:#fff;
+  text-shadow:0 0 3px #000;display:none}
+.swatch.active .check{display:block}
+
+/* Theme cards */
+.theme-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:4px}
+.theme-card{
+  border-radius:10px;padding:8px;cursor:pointer;border:2px solid var(--panel-border);
+  transition:all .2s;position:relative;overflow:hidden;
+}
+.theme-card:hover{border-color:#4a4d60;transform:translateY(-1px)}
+.theme-card.active{border-color:var(--gold);box-shadow:0 0 10px rgba(245,197,24,.3)}
+.theme-preview{height:36px;border-radius:6px;margin-bottom:6px;position:relative;overflow:hidden}
+.theme-name{font-size:9px;font-weight:800;color:var(--text);text-align:center}
+.theme-card.active .theme-name{color:var(--gold)}
+.theme-check{position:absolute;top:5px;right:7px;font-size:10px;display:none}
+.theme-card.active .theme-check{display:block}
+
+/* Toggle */
+.toggle-row{display:flex;align-items:center;justify-content:space-between;
+  padding:10px 12px;background:var(--panel-card);border-radius:var(--radius-sm);margin-bottom:8px}
+.toggle-label{font-size:12px;font-weight:700;color:var(--text)}
+.toggle-sub{font-size:10px;color:var(--text-muted);margin-top:1px}
+.toggle{position:relative;width:42px;height:24px;flex-shrink:0}
+.toggle input{opacity:0;width:0;height:0}
+.toggle-track{
+  position:absolute;inset:0;background:#2a2d3e;border-radius:12px;
+  cursor:pointer;transition:background .2s;
+}
+.toggle input:checked+.toggle-track{background:var(--gold)}
+.toggle-track::after{
+  content:'';position:absolute;width:18px;height:18px;
+  background:#fff;border-radius:50%;top:3px;left:3px;
+  transition:transform .2s;box-shadow:0 1px 4px rgba(0,0,0,.3);
+}
+.toggle input:checked+.toggle-track::after{transform:translateX(18px)}
+
+/* Slider */
+.slider-row{margin-bottom:12px}
+.slider-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.slider-name{font-size:11px;font-weight:700;color:var(--text)}
+.slider-val{font-family:'Press Start 2P',monospace;font-size:9px;color:var(--gold);
+  background:var(--panel-card);padding:3px 7px;border-radius:5px}
+input[type=range]{
+  width:100%;height:6px;border-radius:3px;outline:none;border:none;cursor:pointer;
+  appearance:none;-webkit-appearance:none;
+  background:linear-gradient(to right,var(--gold) var(--pct,50%),#2a2d3e var(--pct,50%));
+}
+input[type=range]::-webkit-slider-thumb{
+  appearance:none;-webkit-appearance:none;width:18px;height:18px;
+  border-radius:50%;background:var(--gold);border:2px solid #fff;
+  box-shadow:0 2px 6px rgba(0,0,0,.4);cursor:pointer;
+}
+input[type=range]::-moz-range-thumb{
+  width:18px;height:18px;border-radius:50%;background:var(--gold);
+  border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.4);cursor:pointer;
+}
+
+/* Difficulty pills */
+.diff-row{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:14px}
+.diff-btn{
+  padding:8px 4px;border-radius:8px;border:2px solid var(--panel-border);
+  background:var(--panel-card);color:var(--text-muted);cursor:pointer;
+  font-family:'Press Start 2P',monospace;font-size:6px;text-align:center;
+  transition:all .15s;line-height:1.5;
+}
+.diff-btn:hover{border-color:#4a4d60;color:var(--text)}
+.diff-btn.active{border-color:var(--gold);color:var(--gold);background:rgba(245,197,24,.08)}
+
+/* Size pills */
+.size-row{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:14px}
+.size-btn{
+  padding:8px 4px;border-radius:8px;border:2px solid var(--panel-border);
+  background:var(--panel-card);color:var(--text-muted);cursor:pointer;
+  font-size:11px;font-weight:800;text-align:center;transition:all .15s;
+}
+.size-btn:hover{border-color:#4a4d60;color:var(--text)}
+.size-btn.active{border-color:var(--gold);color:var(--gold);background:rgba(245,197,24,.08)}
+
+/* Reset btn */
+#reset-btn{
+  background:transparent;border:2px solid #ef444430;color:#ef4444;
+}
+#reset-btn:hover{background:#ef444415;border-color:#ef4444}
+#save-btn{
+  background:var(--gold);border:2px solid var(--gold);color:#0f1117;
+  box-shadow:0 4px 0 var(--gold-dark);
+}
+#save-btn:hover{background:#ffd700}
+#save-btn:active{transform:translateY(3px);box-shadow:0 1px 0 var(--gold-dark)}
+
+
+/* Modal */
+#panel-backdrop{
+  position:fixed;inset:0;background:rgba(0,0,0,.58);backdrop-filter:blur(4px);
+  opacity:0;pointer-events:none;transition:opacity .22s;z-index:35;
+}
+#panel-backdrop.open{opacity:1;pointer-events:auto}
+
+#panel{
+  width:min(92vw,380px);max-height:min(88vh,680px);background:var(--panel-bg);
+  border-radius:18px;overflow:hidden;display:flex;flex-direction:column;
+  border:1px solid var(--panel-border);
+  box-shadow:0 20px 60px rgba(0,0,0,.5);
+  position:fixed;top:50%;left:50%;
+  transform:translate(-50%,-50%) scale(.96);
+  opacity:0;pointer-events:none;z-index:40;
+  transition:transform .22s ease,opacity .22s ease;
+}
+#panel.open{
+  transform:translate(-50%,-50%) scale(1);
+  opacity:1;pointer-events:auto;
+}
+#panel-body{flex:1;overflow-y:auto;padding:14px 16px 16px;scrollbar-width:thin;
+  scrollbar-color:var(--panel-border) transparent}
+#panel-actions{
+  display:flex;gap:10px;margin-top:14px;position:sticky;bottom:0;
+  padding-top:12px;background:linear-gradient(180deg,rgba(15,17,23,0) 0%, rgba(15,17,23,.96) 24%, rgba(15,17,23,1) 100%);
+}
+#reset-btn,#save-btn{
+  flex:1;padding:10px;border-radius:var(--radius-sm);
+  font-family:'Nunito',sans-serif;font-weight:700;font-size:12px;cursor:pointer;
+  transition:all .2s;
+}
+
+/* ─── Responsive ─────────────────────────────────────────── */
+@media(max-width:730px){
+  #app{padding:10px}
+  #game-wrap{width:100vw;max-width:360px;height:calc(100vw * 600/340);max-height:600px;border-radius:0}
+  #menu-btn{top:12px;right:12px;width:42px;height:42px}
+  #panel{width:min(94vw,380px);max-height:84vh}
+  body{overflow:auto}
+}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ── GAME ── -->
+  <div id="game-wrap">
+    <canvas id="gameCanvas" width="340" height="600"></canvas>
+    <div id="score-hud">0</div>
+    <div id="best-hud">BEST<br><span id="best-val">0</span></div>
+    <button id="menu-btn" onclick="togglePanel(true)" aria-label="Open customization menu"><span class="menu-lines"></span></button>
+
+    <!-- Start -->
+    <div class="overlay" id="startScr">
+      <div class="bird-anim">🐦</div>
+      <h1>FLAPPY BIRD</h1>
+      <h2>Ready to fly?</h2>
+      <p>SPACE / Click / Tap to flap.<br>Dodge the pipes!</p>
+      <button class="ob-btn" onclick="startGame()">▶ PLAY</button>
+    </div>
+
+    <!-- Game Over -->
+    <div class="overlay gone" id="dieScr">
+      <h1>GAME OVER</h1>
+      <div class="sb">
+        <div class="sb-row">
+          <div><div class="sb-label">SCORE</div><div class="sb-val" id="die-score">0</div></div>
+          <div><div class="sb-label">BEST</div><div class="sb-val" id="die-best">0</div></div>
+        </div>
+        <div class="sb-medal" id="die-medal"></div>
+      </div>
+      <button class="ob-btn" onclick="startGame()">↺ TRY AGAIN</button>
+    </div>
+  </div>
+
+  <div id="panel-backdrop" onclick="closePanel()"></div>
+
+  <!-- ── CUSTOMIZE PANEL ── -->
+  <div id="panel">
+    <div id="panel-header">
+      <h3>⚙ CUSTOMIZE</h3>
+      <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('bird')">🐦 Bird</button>
+        <button class="tab-btn" onclick="switchTab('world')">🌍 World</button>
+        <button class="tab-btn" onclick="switchTab('pipes')">🌿 Pipes</button>
+        <button class="tab-btn" onclick="switchTab('physics')">⚡ Physics</button>
+        <button class="tab-btn" onclick="switchTab('audio')">🔊 Audio</button>
+      </div>
+    </div>
+    <div id="panel-body">
+
+      <!-- BIRD TAB -->
+      <div class="tab-pane active" id="tab-bird">
+        <div class="sec-label">Bird Color</div>
+        <div class="swatches" id="bird-colors"></div>
+        <div class="sec-label">Bird Size</div>
+        <div class="size-row" id="bird-sizes">
+          <button class="size-btn" data-sz="small" onclick="setBirdSize('small')">🐣 Small</button>
+          <button class="size-btn active" data-sz="medium" onclick="setBirdSize('medium')">🐦 Medium</button>
+          <button class="size-btn" data-sz="large" onclick="setBirdSize('large')">🦅 Large</button>
+        </div>
+        <div class="sec-label">Trail Effect</div>
+        <div class="toggle-row">
+          <div><div class="toggle-label">Flap Trail</div><div class="toggle-sub">Particles on flap</div></div>
+          <label class="toggle"><input type="checkbox" id="tog-trail" onchange="C.trail=this.checked" checked/><span class="toggle-track"></span></label>
+        </div>
+        <div class="toggle-row">
+          <div><div class="toggle-label">Ghost Mode</div><div class="toggle-sub">Semi-transparent bird</div></div>
+          <label class="toggle"><input type="checkbox" id="tog-ghost" onchange="C.ghost=this.checked"/><span class="toggle-track"></span></label>
+        </div>
+      </div>
+
+      <!-- WORLD TAB -->
+      <div class="tab-pane" id="tab-world">
+        <div class="sec-label">Background Theme</div>
+        <div class="theme-grid" id="theme-grid"></div>
+        <div class="sec-label">Environment</div>
+        <div class="toggle-row">
+          <div><div class="toggle-label">Clouds</div><div class="toggle-sub">Floating clouds</div></div>
+          <label class="toggle"><input type="checkbox" id="tog-clouds" onchange="C.clouds=this.checked" checked/><span class="toggle-track"></span></label>
+        </div>
+        <div class="toggle-row">
+          <div><div class="toggle-label">Stars / Particles</div><div class="toggle-sub">Background particles</div></div>
+          <label class="toggle"><input type="checkbox" id="tog-stars" onchange="C.stars=this.checked" checked/><span class="toggle-track"></span></label>
+        </div>
+        <div class="toggle-row">
+          <div><div class="toggle-label">Ground Scroll</div><div class="toggle-sub">Animated ground</div></div>
+          <label class="toggle"><input type="checkbox" id="tog-ground" onchange="C.groundScroll=this.checked" checked/><span class="toggle-track"></span></label>
+        </div>
+      </div>
+
+      <!-- PIPES TAB -->
+      <div class="tab-pane" id="tab-pipes">
+        <div class="sec-label">Pipe Color</div>
+        <div class="swatches" id="pipe-colors"></div>
+        <div class="sec-label">Gap Size</div>
+        <div class="slider-row">
+          <div class="slider-top"><span class="slider-name">Gap Height</span><span class="slider-val" id="lbl-gap">155px</span></div>
+          <input type="range" id="sl-gap" min="100" max="210" step="5" value="155" oninput="setSlider('gap',+this.value,'lbl-gap','px')"/>
+        </div>
+        <div class="sec-label">Pipe Speed</div>
+        <div class="slider-row">
+          <div class="slider-top"><span class="slider-name">Scroll Speed</span><span class="slider-val" id="lbl-speed">2.4</span></div>
+          <input type="range" id="sl-speed" min="1.2" max="5.0" step="0.1" value="2.4" oninput="setSlider('pipeSpeed',+this.value,'lbl-speed','')"/>
+        </div>
+        <div class="sec-label">Spawn Rate</div>
+        <div class="slider-row">
+          <div class="slider-top"><span class="slider-name">Pipe Interval</span><span class="slider-val" id="lbl-interval">1.6s</span></div>
+          <input type="range" id="sl-interval" min="800" max="2500" step="100" value="1600" oninput="setPipeInterval(+this.value)"/>
+        </div>
+        <div class="toggle-row">
+          <div><div class="toggle-label">Pipe Caps</div><div class="toggle-sub">Decorative end caps</div></div>
+          <label class="toggle"><input type="checkbox" id="tog-caps" onchange="C.pipeCaps=this.checked" checked/><span class="toggle-track"></span></label>
+        </div>
+        <div class="toggle-row">
+          <div><div class="toggle-label">Pipe Shine</div><div class="toggle-sub">Highlight stripe</div></div>
+          <label class="toggle"><input type="checkbox" id="tog-shine" onchange="C.pipeShine=this.checked" checked/><span class="toggle-track"></span></label>
+        </div>
+      </div>
+
+      <!-- PHYSICS TAB -->
+      <div class="tab-pane" id="tab-physics">
+        <div class="sec-label">Difficulty Preset</div>
+        <div class="diff-row" id="diff-row">
+          <button class="diff-btn" data-d="easy" onclick="setDiff('easy')">🟢<br>EASY</button>
+          <button class="diff-btn active" data-d="normal" onclick="setDiff('normal')">🟡<br>NORMAL</button>
+          <button class="diff-btn" data-d="hard" onclick="setDiff('hard')">🟠<br>HARD</button>
+          <button class="diff-btn" data-d="insane" onclick="setDiff('insane')">🔴<br>INSANE</button>
+        </div>
+        <div class="sec-label">Fine Tune</div>
+        <div class="slider-row">
+          <div class="slider-top"><span class="slider-name">Gravity</span><span class="slider-val" id="lbl-grav">0.45</span></div>
+          <input type="range" id="sl-grav" min="0.2" max="0.9" step="0.05" value="0.45" oninput="setSlider('gravity',+this.value,'lbl-grav','')"/>
+        </div>
+        <div class="slider-row">
+          <div class="slider-top"><span class="slider-name">Flap Power</span><span class="slider-val" id="lbl-flap">8.5</span></div>
+          <input type="range" id="sl-flap" min="5.0" max="13.0" step="0.5" value="8.5" oninput="setFlapSlider(+this.value)"/>
+        </div>
+        <div class="toggle-row">
+          <div><div class="toggle-label">Speed Ramp</div><div class="toggle-sub">Faster as score grows</div></div>
+          <label class="toggle"><input type="checkbox" id="tog-ramp" onchange="C.speedRamp=this.checked" checked/><span class="toggle-track"></span></label>
+        </div>
+      </div>
+
+      <!-- AUDIO TAB -->
+      <div class="tab-pane" id="tab-audio">
+        <div class="sec-label">Sound</div>
+        <div class="toggle-row">
+          <div><div class="toggle-label">Sound Effects</div><div class="toggle-sub">Flap, score, death</div></div>
+          <label class="toggle"><input type="checkbox" id="tog-sound" onchange="C.sound=this.checked" checked/><span class="toggle-track"></span></label>
+        </div>
+        <div class="sec-label">Volume</div>
+        <div class="slider-row">
+          <div class="slider-top"><span class="slider-name">Master Volume</span><span class="slider-val" id="lbl-vol">70%</span></div>
+          <input type="range" id="sl-vol" min="0" max="100" step="5" value="70" oninput="setVolume(+this.value)"/>
+        </div>
+        <div class="sec-label">Score SFX</div>
+        <div class="toggle-row">
+          <div><div class="toggle-label">Score Chime</div><div class="toggle-sub">Sound when scoring</div></div>
+          <label class="toggle"><input type="checkbox" id="tog-scoreSfx" onchange="C.scoreSfx=this.checked" checked/><span class="toggle-track"></span></label>
+        </div>
+        <div class="toggle-row">
+          <div><div class="toggle-label">Death Sound</div><div class="toggle-sub">Sound on collision</div></div>
+          <label class="toggle"><input type="checkbox" id="tog-dieSfx" onchange="C.dieSfx=this.checked" checked/><span class="toggle-track"></span></label>
+        </div>
+      </div>
+
+      <div id="panel-actions">
+        <button id="reset-btn" onclick="resetDefaults()">↺ Reset to Defaults</button>
+        <button id="save-btn" onclick="saveSettings()">💾 Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+//  CONFIG — single source of truth for all customization
+// ═══════════════════════════════════════════════════════════
+const STORAGE_KEY = 'fb_custom_settings_v1';
+
+const DEFAULT_C = {
+  // Bird
+  birdColorIdx: 0,
+  birdSize: 'medium',
+  trail: true,
+  ghost: false,
+  // World
+  theme: 'day',
+  clouds: true,
+  stars: true,
+  groundScroll: true,
+  // Pipes
+  pipeColorIdx: 0,
+  gap: 155,
+  pipeSpeed: 2.4,
+  pipeInterval: 1600,
+  pipeCaps: true,
+  pipeShine: true,
+  // Physics
+  gravity: 0.45,
+  flapForce: -8.5,
+  speedRamp: true,
+  // Audio
+  sound: true,
+  volume: 0.7,
+  scoreSfx: true,
+  dieSfx: true,
+};
+
+const C = { ...DEFAULT_C };
+
+const BIRD_RADIUS = { small:14, medium:17, large:22 };
+
+const BIRD_PALETTES = [
+  { name:'Classic', body:'#f5c518', wing:'#d4a017', belly:'#fde68a', beak:'#f97316' },
+  { name:'Crimson', body:'#ef4444', wing:'#b91c1c', belly:'#fca5a5', beak:'#f97316' },
+  { name:'Ocean',   body:'#3b82f6', wing:'#1d4ed8', belly:'#93c5fd', beak:'#f97316' },
+  { name:'Forest',  body:'#22c55e', wing:'#15803d', belly:'#86efac', beak:'#f97316' },
+  { name:'Rose',    body:'#ec4899', wing:'#be185d', belly:'#f9a8d4', beak:'#f97316' },
+  { name:'Snow',    body:'#f8fafc', wing:'#cbd5e1', belly:'#ffffff', beak:'#f97316' },
+];
+
+const PIPE_PALETTES = [
+  { body:'#73bf2e', dark:'#4d8a1b', shine:'#a0e060', cap:'#5a9e22' },
+  { body:'#ef4444', dark:'#b91c1c', shine:'#fca5a5', cap:'#dc2626' },
+  { body:'#3b82f6', dark:'#1d4ed8', shine:'#93c5fd', cap:'#2563eb' },
+  { body:'#71717a', dark:'#3f3f46', shine:'#d4d4d8', cap:'#52525b' },
+  { body:'#f59e0b', dark:'#b45309', shine:'#fde68a', cap:'#d97706' },
+];
+
+const THEMES = {
+  day:   { skyTop:'#5bc8d4', skyBot:'#a8e6ef', groundTop:'#ded895', groundBot:'#c8a85f', grass:'#8db33a', stars:false, starCol:'#ffffff' },
+  dusk:  { skyTop:'#c2410c', skyBot:'#fed7aa', groundTop:'#b45309', groundBot:'#78350f', grass:'#65a30d', stars:false, starCol:'#fde68a' },
+  night: { skyTop:'#0f172a', skyBot:'#1e3a5f', groundTop:'#334155', groundBot:'#1e293b', grass:'#14532d', stars:true,  starCol:'#e2e8f0' },
+  space: { skyTop:'#000000', skyBot:'#0d0d2b', groundTop:'#1e1b4b', groundBot:'#0f0a2e', grass:'#4c1d95', stars:true,  starCol:'#a78bfa' },
+  ocean: { skyTop:'#0369a1', skyBot:'#7dd3fc', groundTop:'#b45309', groundBot:'#78350f', grass:'#0d9488', stars:false, starCol:'#e0f2fe' },
+};
+
+// ═══════════════════════════════════════════════════════════
+//  CANVAS & GAME STATE
+// ═══════════════════════════════════════════════════════════
+const canvas  = document.getElementById('gameCanvas');
+const ctx     = canvas.getContext('2d');
+const W = canvas.width, H = canvas.height;
+const GND = 65; // ground height
+
+let state = 'idle'; // idle | playing | dead
+let score = 0, best = +(localStorage.getItem('fb_best')||0);
+let bird, pipes, clouds, stars, particles;
+let groundX = 0, lastPipeTs = 0, deathTimer = 0, lastTs = 0, frameId;
+
+// ─── Object Pools ─────────────────────────────────────────
+const pipePool = [], particlePool = [];
+function getPipe() { return pipePool.pop() || {} }
+function retPipe(p) { pipePool.push(p) }
+function getParticle() { return particlePool.pop() || {} }
+function retParticle(p) { particlePool.push(p) }
+
+// ═══════════════════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════════════════
+function init() {
+  score = 0;
+  pipes.forEach(retPipe); pipes = [];
+  particles.forEach(retParticle); particles = [];
+  clouds = makeInitialClouds();
+  const r = BIRD_RADIUS[C.birdSize];
+  bird = { x:80, y:H/2-40, vy:0, rot:0, frame:0, frameT:0, r };
+  lastPipeTs = 0; deathTimer = 0;
+  updateHUD();
+}
+
+function makeInitialClouds() {
+  return [60,180,300].map(x => mkCloud(x));
+}
+function mkCloud(x) {
+  return {
+    x: x ?? W+20+Math.random()*160,
+    y: 20+Math.random()*160,
+    w: 55+Math.random()*75,
+    spd: 0.35+Math.random()*0.4,
+  };
+}
+function mkStar() {
+  return { x:Math.random()*W, y:Math.random()*(H-GND), r:Math.random()*1.8+0.4, a:Math.random() };
+}
+
+// ═══════════════════════════════════════════════════════════
+//  GAME LOOP
+// ═══════════════════════════════════════════════════════════
+function gameLoop(ts) {
+  const dt = Math.min(ts-(lastTs||ts), 50); // cap delta at 50ms
+  lastTs = ts;
+  update(ts, dt);
+  render();
+  frameId = requestAnimationFrame(gameLoop);
+}
+
+function update(ts, dt) {
+  const playing = state==='playing', dead = state==='dead';
+  if (!playing && !dead) return;
+
+  // Clouds
+  if (C.clouds) {
+    for (const c of clouds) c.x -= c.spd*(playing?1:0.5);
+    if (playing) {
+      clouds = clouds.filter(c=>c.x+c.w > -10);
+      if (clouds.length < 4) clouds.push(mkCloud());
+    }
+  }
+
+  // Pipes
+  if (playing) {
+    const interval = C.pipeInterval;
+    if (!lastPipeTs || ts-lastPipeTs > interval) {
+      lastPipeTs = ts; spawnPipe();
+    }
+    const spd = C.pipeSpeed + (C.speedRamp ? score*0.04 : 0);
+    for (const p of pipes) {
+      p.x -= spd;
+      if (!p.scored && p.x+p.w < bird.x-bird.r) {
+        p.scored=true; score++;
+        updateHUD();
+        if (C.sound && C.scoreSfx) sfxScore();
+      }
+    }
+    const dead2 = pipes.filter(p=>p.x+p.w < -10);
+    dead2.forEach(p=>{ pipes.splice(pipes.indexOf(p),1); retPipe(p); });
+  }
+
+  // Bird physics
+  if (playing) {
+    bird.vy += C.gravity;
+    bird.y  += bird.vy;
+    bird.rot = Math.min(Math.max(bird.vy*4.5,-28),90);
+    bird.frameT += dt;
+    if (bird.frameT > 80) { bird.frameT=0; bird.frame=(bird.frame+1)%3; }
+    checkCollision();
+  } else if (dead) {
+    bird.vy += C.gravity*1.1;
+    bird.y  += bird.vy;
+    bird.rot = 90;
+    deathTimer += dt;
+    if (deathTimer > 800) showDead();
+  }
+
+  // Clamp to ground
+  if (bird.y+bird.r > H-GND) { bird.y=H-GND-bird.r; bird.vy=0; }
+  if (bird.y-bird.r < 0)     { bird.y=bird.r; bird.vy=0; }
+
+  // Particles
+  for (const p of particles) {
+    p.x+=p.vx; p.y+=p.vy; p.vy+=0.12; p.life-=dt; p.a=Math.max(0,p.life/p.maxLife);
+  }
+  const dead3 = particles.filter(p=>p.life<=0);
+  dead3.forEach(p=>{ particles.splice(particles.indexOf(p),1); retParticle(p); });
+
+  // Ground scroll
+  if (playing && C.groundScroll) groundX=(groundX-C.pipeSpeed)%24;
+}
+
+function spawnPipe() {
+  const minT=50, maxT=H-GND-C.gap-50;
+  const topH = minT+Math.random()*(maxT-minT);
+  const p = getPipe();
+  p.x=W+10; p.topH=topH; p.w=56; p.scored=false;
+  pipes.push(p);
+}
+
+function checkCollision() {
+  if (bird.y+bird.r >= H-GND || bird.y-bird.r <= 0) { killBird(); return; }
+  for (const p of pipes) {
+    const bx=bird.x, by=bird.y, r=bird.r-4;
+    if (bx+r<p.x || bx-r>p.x+p.w) continue;
+    if (by-r<p.topH || by+r>p.topH+C.gap) { killBird(); return; }
+  }
+}
+
+function killBird() {
+  if (state!=='playing') return;
+  state='dead';
+  bird.vy=C.flapForce*0.5;
+  deathTimer=0;
+  if (score>best){ best=score; localStorage.setItem('fb_best',best); }
+  spawnDeathParticles();
+  if (C.sound && C.dieSfx) sfxDead();
+}
+
+function spawnFlapParticles() {
+  if (!C.trail) return;
+  for (let i=0;i<5;i++) {
+    const p=getParticle();
+    p.x=bird.x; p.y=bird.y+bird.r;
+    p.vx=(Math.random()-0.5)*2.5; p.vy=Math.random()*1.5+0.5;
+    p.life=p.maxLife=300+Math.random()*200;
+    p.col=BIRD_PALETTES[C.birdColorIdx].body; p.r=3+Math.random()*3; p.a=1;
+    particles.push(p);
+  }
+}
+
+function spawnDeathParticles() {
+  for (let i=0;i<14;i++) {
+    const p=getParticle();
+    p.x=bird.x; p.y=bird.y;
+    const ang=Math.random()*Math.PI*2, spd=2+Math.random()*4;
+    p.vx=Math.cos(ang)*spd; p.vy=Math.sin(ang)*spd-2;
+    p.life=p.maxLife=500+Math.random()*400;
+    p.col=BIRD_PALETTES[C.birdColorIdx].body; p.r=4+Math.random()*5; p.a=1;
+    particles.push(p);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+//  RENDER
+// ═══════════════════════════════════════════════════════════
+function render() {
+  const T = THEMES[C.theme];
+
+  // Sky
+  const sky = ctx.createLinearGradient(0,0,0,H-GND);
+  sky.addColorStop(0,T.skyTop); sky.addColorStop(1,T.skyBot);
+  ctx.fillStyle=sky; ctx.fillRect(0,0,W,H);
+
+  // Stars / bg particles
+  if (C.stars && T.stars && stars) {
+    ctx.fillStyle=T.starCol;
+    for (const s of stars) {
+      ctx.globalAlpha=0.5+0.5*Math.sin(s.a+=0.02);
+      ctx.beginPath(); ctx.arc(s.x,s.y,s.r,0,Math.PI*2); ctx.fill();
+    }
+    ctx.globalAlpha=1;
+  }
+
+  // Clouds
+  if (C.clouds) for (const c of clouds) drawCloud(c,T);
+
+  // Pipes
+  for (const p of pipes) drawPipe(p);
+
+  // Ground
+  drawGround(T);
+
+  // Particles
+  for (const pt of particles) {
+    ctx.globalAlpha=pt.a*0.85;
+    ctx.fillStyle=pt.col;
+    ctx.beginPath(); ctx.arc(pt.x,pt.y,pt.r,0,Math.PI*2); ctx.fill();
+  }
+  ctx.globalAlpha=1;
+
+  // Bird
+  drawBird();
+}
+
+function drawCloud(c, T) {
+  ctx.fillStyle = T.stars ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.82)';
+  ctx.beginPath();
+  ctx.ellipse(c.x+c.w*0.2, c.y,        c.w*0.22, c.w*0.14, 0,0,Math.PI*2);
+  ctx.ellipse(c.x+c.w*0.5, c.y-c.w*.07,c.w*0.28, c.w*0.18, 0,0,Math.PI*2);
+  ctx.ellipse(c.x+c.w*0.78,c.y,        c.w*0.22, c.w*0.13, 0,0,Math.PI*2);
+  ctx.fill();
+}
+
+function drawPipe(p) {
+  const PP = PIPE_PALETTES[C.pipeColorIdx];
+  const capH=20, capX=6, bw=p.w;
+
+  // ── Bottom pipe
+  const by=p.topH+C.gap, bh=H-GND-by;
+  ctx.fillStyle=PP.body; ctx.fillRect(p.x,by,bw,bh);
+  ctx.fillStyle=PP.dark; ctx.fillRect(p.x,by,4,bh); ctx.fillRect(p.x+bw-4,by,4,bh);
+  if (C.pipeShine) { ctx.fillStyle=PP.shine; ctx.fillRect(p.x+8,by+capH,7,bh-capH); }
+  if (C.pipeCaps) {
+    ctx.fillStyle=PP.body; rrect(p.x-capX,by,bw+capX*2,capH,4);
+    ctx.fillStyle=PP.dark; ctx.fillRect(p.x-capX,by+capH-3,bw+capX*2,3);
+  }
+
+  // ── Top pipe
+  ctx.fillStyle=PP.body; ctx.fillRect(p.x,0,bw,p.topH-capH);
+  ctx.fillStyle=PP.dark; ctx.fillRect(p.x,0,4,p.topH); ctx.fillRect(p.x+bw-4,0,4,p.topH);
+  if (C.pipeShine) { ctx.fillStyle=PP.shine; ctx.fillRect(p.x+8,0,7,p.topH-capH); }
+  if (C.pipeCaps) {
+    ctx.fillStyle=PP.body; rrect(p.x-capX,p.topH-capH,bw+capX*2,capH,4);
+    ctx.fillStyle=PP.dark; ctx.fillRect(p.x-capX,p.topH-3,bw+capX*2,3);
+  }
+}
+
+function rrect(x,y,w,h,r) {
+  ctx.beginPath();
+  ctx.moveTo(x+r,y); ctx.lineTo(x+w-r,y); ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+  ctx.lineTo(x+w,y+h-r); ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+  ctx.lineTo(x+r,y+h); ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+  ctx.lineTo(x,y+r); ctx.quadraticCurveTo(x,y,x+r,y);
+  ctx.closePath(); ctx.fill();
+}
+
+function drawGround(T) {
+  ctx.fillStyle=T.groundBot; ctx.fillRect(0,H-GND,W,GND);
+  ctx.fillStyle=T.groundTop; ctx.fillRect(0,H-GND,W,8);
+  ctx.fillStyle=T.grass;
+  for (let gx=groundX; gx<W+24; gx+=24) {
+    ctx.beginPath(); ctx.arc(gx,H-GND+4,7,Math.PI,0); ctx.fill();
+  }
+}
+
+const WA = [-0.4,0,0.4];
+function drawBird() {
+  const {x,y,rot,frame,r} = bird;
+  const BP = BIRD_PALETTES[C.birdColorIdx];
+  ctx.save();
+  ctx.translate(x,y);
+  ctx.rotate(rot*Math.PI/180);
+  if (C.ghost) ctx.globalAlpha=0.6;
+
+  // Body
+  ctx.fillStyle=BP.body;
+  ctx.beginPath(); ctx.ellipse(0,0,r,r*0.82,0,0,Math.PI*2); ctx.fill();
+
+  // Wing
+  ctx.save(); ctx.rotate(WA[frame]);
+  ctx.fillStyle=BP.wing;
+  ctx.beginPath(); ctx.ellipse(-3,2,r*0.55,r*0.3,-0.4,0,Math.PI*2); ctx.fill();
+  ctx.restore();
+
+  // Belly
+  ctx.fillStyle=BP.belly;
+  ctx.beginPath(); ctx.ellipse(3,3,r*0.5,r*0.38,0.3,0,Math.PI*2); ctx.fill();
+
+  // Eye white
+  ctx.fillStyle='#fff';
+  ctx.beginPath(); ctx.arc(r*0.38,-r*0.22,r*0.32,0,Math.PI*2); ctx.fill();
+
+  // Pupil
+  ctx.fillStyle='#0f172a';
+  ctx.beginPath(); ctx.arc(r*0.44,-r*0.22,r*0.16,0,Math.PI*2); ctx.fill();
+
+  // Shine
+  ctx.fillStyle='#fff';
+  ctx.beginPath(); ctx.arc(r*0.5,-r*0.3,r*0.08,0,Math.PI*2); ctx.fill();
+
+  // Beak
+  ctx.fillStyle=BP.beak;
+  ctx.beginPath();
+  ctx.moveTo(r*0.54,-r*0.06); ctx.lineTo(r*1.0,-r*0.10); ctx.lineTo(r*0.54,r*0.12);
+  ctx.closePath(); ctx.fill();
+
+  // Death X
+  if (state==='dead') {
+    ctx.strokeStyle='#ef4444'; ctx.lineWidth=2.5; ctx.lineCap='round';
+    const ex=r*0.38,ey=-r*0.22,es=r*0.18;
+    ctx.beginPath();
+    ctx.moveTo(ex-es,ey-es); ctx.lineTo(ex+es,ey+es);
+    ctx.moveTo(ex+es,ey-es); ctx.lineTo(ex-es,ey+es);
+    ctx.stroke();
+  }
+
+  ctx.globalAlpha=1; ctx.restore();
+}
+
+// ═══════════════════════════════════════════════════════════
+//  GAME FLOW
+// ═══════════════════════════════════════════════════════════
+function startGame() {
+  document.getElementById('startScr').classList.add('gone');
+  document.getElementById('dieScr').classList.add('gone');
+  document.getElementById('score-hud').style.display='block';
+  pipes=[]; particles=[]; clouds=makeInitialClouds();
+  stars = Array.from({length:80},mkStar);
+  init();
+  state='playing';
+  syncMenuButton();
+  lastPipeTs=performance.now();
+}
+
+function showDead() {
+  if (!document.getElementById('dieScr').classList.contains('gone')) return;
+  document.getElementById('die-score').textContent=score;
+  document.getElementById('die-best').textContent=best;
+  const m = score>=40?'🥇 GOLD':score>=20?'🥈 SILVER':score>=10?'🥉 BRONZE':'🎖 KEEP GOING';
+  document.getElementById('die-medal').textContent=m;
+  document.getElementById('dieScr').classList.remove('gone');
+  document.getElementById('score-hud').style.display='none';
+  syncMenuButton();
+}
+
+function flap() {
+  if (state==='playing') {
+    bird.vy=C.flapForce;
+    spawnFlapParticles();
+    if (C.sound) sfxFlap();
+  }
+}
+
+function updateHUD() {
+  document.getElementById('score-hud').textContent=score;
+  document.getElementById('best-val').textContent=best;
+}
+
+// ═══════════════════════════════════════════════════════════
+//  CONTROLS
+// ═══════════════════════════════════════════════════════════
+document.addEventListener('keydown', e => {
+  if (e.code==='Space'||e.code==='ArrowUp') { e.preventDefault(); flap(); }
+});
+canvas.addEventListener('pointerdown', e => {
+  if (state==='idle'||state==='dead') return;
+  e.preventDefault(); flap();
+});
+
+// ═══════════════════════════════════════════════════════════
+//  CUSTOMIZATION CONTROLS
+// ═══════════════════════════════════════════════════════════
+function switchTab(id) {
+  document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  event.currentTarget.classList.add('active');
+}
+
+function openPanel() {
+  document.getElementById('panel').classList.add('open');
+  document.getElementById('panel-backdrop').classList.add('open');
+}
+
+function closePanel() {
+  document.getElementById('panel').classList.remove('open');
+  document.getElementById('panel-backdrop').classList.remove('open');
+}
+
+function togglePanel(forceOpen=false) {
+  const panel = document.getElementById('panel');
+  if (forceOpen || !panel.classList.contains('open')) openPanel();
+  else closePanel();
+}
+
+function syncMenuButton() {
+  const menuBtn = document.getElementById('menu-btn');
+  if (!menuBtn) return;
+  menuBtn.classList.toggle('hidden', state === 'playing');
+}
+
+function setSlider(key, val, lblId, suffix) {
+  C[key]=val;
+  const lbl=document.getElementById(lblId);
+  if (lbl) lbl.textContent=val.toFixed(key==='gap'?0:2).replace('.00','')+suffix;
+  syncSliderBg(document.getElementById('sl-'+{gap:'gap',pipeSpeed:'speed',gravity:'grav'}[key]||key));
+}
+
+function setPipeInterval(val) {
+  C.pipeInterval=val;
+  document.getElementById('lbl-interval').textContent=(val/1000).toFixed(1)+'s';
+  syncSliderBg(document.getElementById('sl-interval'));
+}
+
+function setFlapSlider(val) {
+  C.flapForce=-val;
+  document.getElementById('lbl-flap').textContent=val.toFixed(1);
+  syncSliderBg(document.getElementById('sl-flap'));
+}
+
+function setVolume(val) {
+  C.volume=val/100;
+  document.getElementById('lbl-vol').textContent=val+'%';
+  syncSliderBg(document.getElementById('sl-vol'));
+}
+
+function syncSliderBg(el) {
+  if (!el) return;
+  const pct=((el.value-el.min)/(el.max-el.min)*100).toFixed(1);
+  el.style.setProperty('--pct',pct+'%');
+}
+
+function setBirdSize(sz) {
+  C.birdSize=sz;
+  if (bird) bird.r=BIRD_RADIUS[sz];
+  document.querySelectorAll('.size-btn').forEach(b=>{
+    b.classList.toggle('active',b.dataset.sz===sz);
+  });
+}
+
+function syncDifficultyButtons() {
+  let matched = null;
+  for (const [key,val] of Object.entries(DIFFS)) {
+    if (
+      C.gravity === val.gravity &&
+      C.flapForce === val.flapForce &&
+      C.pipeSpeed === val.pipeSpeed &&
+      C.gap === val.gap &&
+      C.pipeInterval === val.pipeInterval
+    ) {
+      matched = key;
+      break;
+    }
+  }
+  document.querySelectorAll('.diff-btn').forEach(b=>b.classList.toggle('active', b.dataset.d===matched));
+}
+
+function applyConfigToUI() {
+  buildSwatches();
+  buildThemeGrid();
+  setBirdSize(C.birdSize);
+  setSliderEl('sl-gap', C.gap, 'lbl-gap', 'px');
+  setSliderEl('sl-speed', C.pipeSpeed, 'lbl-speed', '');
+  setSliderEl('sl-grav', C.gravity, 'lbl-grav', '');
+  setSliderEl('sl-flap', -C.flapForce, 'lbl-flap', '');
+  setPipeInterval(C.pipeInterval);
+  setSliderEl('sl-vol', Math.round(C.volume*100), 'lbl-vol', '%');
+
+  document.getElementById('tog-trail').checked = C.trail;
+  document.getElementById('tog-ghost').checked = C.ghost;
+  document.getElementById('tog-clouds').checked = C.clouds;
+  document.getElementById('tog-stars').checked = C.stars;
+  document.getElementById('tog-ground').checked = C.groundScroll;
+  document.getElementById('tog-caps').checked = C.pipeCaps;
+  document.getElementById('tog-shine').checked = C.pipeShine;
+  document.getElementById('tog-ramp').checked = C.speedRamp;
+  document.getElementById('tog-sound').checked = C.sound;
+  document.getElementById('tog-scoreSfx').checked = C.scoreSfx;
+  document.getElementById('tog-dieSfx').checked = C.dieSfx;
+
+  syncDifficultyButtons();
+}
+
+function loadSavedSettings() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return;
+    const saved = JSON.parse(raw);
+    Object.assign(C, DEFAULT_C, saved || {});
+  } catch (e) {
+    console.warn('Could not load saved settings.', e);
+  }
+}
+
+function saveSettings() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(C));
+  closePanel();
+  const btn = document.getElementById('save-btn');
+  const prev = btn.textContent;
+  btn.textContent = '✓ Saved';
+  setTimeout(()=>btn.textContent = prev, 1100);
+}
+
+const DIFFS = {
+  easy:   {gravity:0.28, flapForce:-7.0, pipeSpeed:1.8, gap:185, pipeInterval:2000},
+  normal: {gravity:0.45, flapForce:-8.5, pipeSpeed:2.4, gap:155, pipeInterval:1600},
+  hard:   {gravity:0.60, flapForce:-9.5, pipeSpeed:3.2, gap:130, pipeInterval:1300},
+  insane: {gravity:0.80, flapForce:-11.0,pipeSpeed:4.5, gap:110, pipeInterval:1000},
+};
+
+function setDiff(d) {
+  const D=DIFFS[d];
+  Object.assign(C,D);
+  document.querySelectorAll('.diff-btn').forEach(b=>b.classList.toggle('active',b.dataset.d===d));
+  // sync sliders
+  setSliderEl('sl-grav',C.gravity,'lbl-grav','');
+  setSliderEl('sl-flap',-C.flapForce,'lbl-flap','');
+  setSliderEl('sl-speed',C.pipeSpeed,'lbl-speed','');
+  setSliderEl('sl-gap',C.gap,'lbl-gap','px');
+  setPipeInterval(C.pipeInterval);
+  document.getElementById('sl-interval').value=C.pipeInterval;
+  syncSliderBg(document.getElementById('sl-interval'));
+}
+
+function setSliderEl(id, val, lblId, suffix) {
+  const el=document.getElementById(id);
+  if (!el) return;
+  el.value=val;
+  const lbl=document.getElementById(lblId);
+  if (lbl) lbl.textContent=val.toFixed(2).replace(/\.?0+$/,'')+suffix;
+  syncSliderBg(el);
+}
+
+function resetDefaults() {
+  Object.assign(C, DEFAULT_C);
+  if (bird) bird.r = BIRD_RADIUS.medium;
+  applyConfigToUI();
+}
+
+// ─── Build Bird Color Swatches ─────────────────────────────
+function buildSwatches() {
+  const wrap=document.getElementById('bird-colors');
+  wrap.innerHTML='';
+  BIRD_PALETTES.forEach((bp,i)=>{
+    const d=document.createElement('div');
+    d.className='swatch'+(i===C.birdColorIdx?' active':'');
+    d.style.background=bp.body;
+    d.innerHTML=`<span class="check">✓</span>`;
+    d.title=bp.name;
+    d.onclick=()=>{
+      C.birdColorIdx=i;
+      wrap.querySelectorAll('.swatch').forEach((s,j)=>s.classList.toggle('active',j===i));
+    };
+    wrap.appendChild(d);
+  });
+
+  const pw=document.getElementById('pipe-colors');
+  pw.innerHTML='';
+  PIPE_PALETTES.forEach((pp,i)=>{
+    const d=document.createElement('div');
+    d.className='swatch'+(i===C.pipeColorIdx?' active':'');
+    d.style.background=pp.body;
+    d.innerHTML=`<span class="check">✓</span>`;
+    d.onclick=()=>{
+      C.pipeColorIdx=i;
+      pw.querySelectorAll('.swatch').forEach((s,j)=>s.classList.toggle('active',j===i));
+    };
+    pw.appendChild(d);
+  });
+}
+
+// ─── Build Theme Cards ─────────────────────────────────────
+const THEME_META = [
+  { key:'day',   label:'☀️ Day',   grad:['#5bc8d4','#a8e6ef'] },
+  { key:'dusk',  label:'🌅 Dusk',  grad:['#c2410c','#fed7aa'] },
+  { key:'night', label:'🌙 Night', grad:['#0f172a','#1e3a5f'] },
+  { key:'space', label:'🚀 Space', grad:['#000','#0d0d2b'] },
+  { key:'ocean', label:'🌊 Ocean', grad:['#0369a1','#7dd3fc'] },
+];
+
+function buildThemeGrid() {
+  const g=document.getElementById('theme-grid');
+  g.innerHTML='';
+  THEME_META.forEach(tm=>{
+    const d=document.createElement('div');
+    d.className='theme-card'+(C.theme===tm.key?' active':'');
+    d.innerHTML=`
+      <div class="theme-preview" style="background:linear-gradient(135deg,${tm.grad[0]},${tm.grad[1]})"></div>
+      <div class="theme-name">${tm.label}</div>
+      <span class="theme-check">✓</span>`;
+    d.onclick=()=>{
+      C.theme=tm.key;
+      g.querySelectorAll('.theme-card').forEach(c=>c.classList.toggle('active',c===d));
+    };
+    g.appendChild(d);
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+//  AUDIO (Web Audio API)
+// ═══════════════════════════════════════════════════════════
+let actx;
+function getACtx(){ return actx||(actx=new(window.AudioContext||window.webkitAudioContext)()); }
+function tone(freq,type,dur,vol=0.12) {
+  if (!C.sound) return;
+  try {
+    const ac=getACtx(), o=ac.createOscillator(), g=ac.createGain();
+    o.connect(g); g.connect(ac.destination);
+    o.type=type; o.frequency.value=freq;
+    g.gain.setValueAtTime(vol*C.volume,ac.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001,ac.currentTime+dur);
+    o.start(); o.stop(ac.currentTime+dur);
+  } catch(e){}
+}
+function sfxFlap() { tone(520,'square',0.07,0.10); }
+function sfxScore(){ tone(880,'sine',0.09,0.13); setTimeout(()=>tone(1100,'sine',0.09,0.13),75); }
+function sfxDead() { tone(280,'sawtooth',0.14,0.18); setTimeout(()=>tone(180,'sawtooth',0.22,0.18),90); }
+
+// ═══════════════════════════════════════════════════════════
+//  BOOTSTRAP
+// ═══════════════════════════════════════════════════════════
+pipes=[]; particles=[]; clouds=makeInitialClouds();
+stars=Array.from({length:80},mkStar);
+bird={x:80,y:H/2-40,vy:0,rot:0,frame:0,frameT:0,r:BIRD_RADIUS.medium};
+
+loadSavedSettings();
+applyConfigToUI();
+
+// Init all sliders
+document.querySelectorAll('input[type=range]').forEach(syncSliderBg);
+updateHUD();
+document.getElementById('score-hud').style.display='none';
+syncMenuButton();
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closePanel();
+});
+
+// Start idle render loop
+(function idleLoop(ts) {
+  lastTs=ts;
+  for (const c of clouds) c.x-=c.spd*0.5;
+  if (clouds.length<4) clouds.push(mkCloud());
+  if (C.groundScroll) groundX=(groundX-1)%24;
+  render();
+  if (state==='idle') requestAnimationFrame(idleLoop);
+  else frameId=requestAnimationFrame(gameLoop);
+})(0);
+</script>
+</body>
+</html>
